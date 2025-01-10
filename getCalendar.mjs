@@ -19,6 +19,12 @@ const checkNonCalendarText = (text) => {
     ]);
 };
 
+const printProcessingSemester = (semester) => {
+  console.log('---------------------------');
+  console.log('Adding .... Semester: ' + semester);
+  console.log('---------------------------');
+}
+
 const parseCalendar = (semesterCalendar, html) => {
     const $ = cheerio.load(html);
 
@@ -37,17 +43,31 @@ const parseCalendar = (semesterCalendar, html) => {
             }
 
             const semester = $(elem).text().trim().split('\n')[0];
-            console.log('---------------------------');
-            console.log('Adding .... Semester: ' + semester);
-            console.log('---------------------------');
+            printProcessingSemester(semester);
+
             // remove semester name from the text
             $(elem).text($(elem).text().replace(semester, ''));
+            
+            
             // each date has a "–" character, so split by that
-            const data = $(elem)
-                .text()
-                .split(/[\n–]/)
-                .map((date) => date.trim())
-                .filter((date) => date !== '');
+           
+const data = $(elem)
+    .text()
+    .split(/[\n–]/) // First, split based on newline or dash
+    .map((date) => date.trim()) // Trim the whitespace around the text
+    .filter((date) => date !== '') // Filter out empty strings
+    .map((text) => {
+        // Handle capitalized sentences or phrases followed by regular text
+        return text
+            .replace(/([a-z])([A-Z])/g, '$1|$2') // Split between lowercase and uppercase
+            .replace(/([A-Z]+)([A-Z][a-z])/g, '$1|$2') // Split continuous uppercase followed by lowercase
+            .split('|') // Now split at the pipe character
+            .map(s => s.trim()) // Trim the parts after split
+            .filter(s => s !== ''); // Remove any empty strings
+    })
+    .flat(); // Flatten any nested arrays
+
+//console.log(data);
 
             const months = [
                 'January',
@@ -69,6 +89,8 @@ const parseCalendar = (semesterCalendar, html) => {
             let currentMonth = null;
             let currentDate = null;
 
+            let elementToSkip = null;
+
             for (const element of data) {
                 const month = months.find((m) =>
                     element.toUpperCase().includes(m.toUpperCase())
@@ -81,7 +103,22 @@ const parseCalendar = (semesterCalendar, html) => {
                     if (!calendar[currentMonth]) {
                         calendar[currentMonth] = [];
                     }
-                    if (element !== element.toUpperCase()) {
+                    if (calendar[currentMonth].length !== 0) {
+                        var lastIndex = calendar[currentMonth].length - 1;
+                        if (calendar[currentMonth][lastIndex].date === currentDate) {
+                            var prev = calendar[currentMonth][lastIndex];
+                            prev = {
+                              date: prev.date,
+                              event: prev.event,
+                              desc: element,
+                            }
+                            
+                            elementToSkip = element;
+                            
+                            calendar[currentMonth][lastIndex] = prev;
+                        };
+                    };
+                    if (elementToSkip === element) {
                         continue;
                     }
                     calendar[currentMonth].push({
@@ -90,7 +127,6 @@ const parseCalendar = (semesterCalendar, html) => {
                     });
                 }
             }
-
             semesterCalendar[semester] = calendar;
         }
     });
@@ -112,9 +148,8 @@ const getCalendar = (options) => {
         parseCalendar(semesterCalendar, html);
 
         Object.keys(semesterCalendar).forEach((semester) => {
-            console.log('-----' + semester + '-----');
-            console.log(semesterCalendar[semester]);
-        });
+          console.log('-----' + semester + '-----');
+          console.log(semesterCalendar[semester]); });
         return; // Break early
     }
 
