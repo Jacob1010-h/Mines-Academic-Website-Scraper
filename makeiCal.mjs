@@ -110,7 +110,6 @@ Object.keys(academicCalendar).forEach((semester) => {
       return;
     }
     if (event.date.includes(" & ")) {
-      // TODO: this one needs special implimentation because it needs to create two events
       if (event.date.includes("-")) {
         let first = event.date.split(" & ")[0].split(" ")[1].split("-")
         let second = event.date.split(" & ")[1].split("-")
