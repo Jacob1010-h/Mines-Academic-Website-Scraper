@@ -1,9 +1,9 @@
-import scrape from "website-scraper"; // Only as ESM, no CommonJS
+import axios from "axios";
 import fs from "fs";
 import path from "path";
 import { parseCalendar } from "./prepCalendar.mjs";
 
-const getCalendar = (options) => {
+const getCalendar = async (options) => {
   // Delete result dir if it exists
   const semesterCalendar = {};
   if (fs.existsSync(options.directory)) {
@@ -19,21 +19,23 @@ const getCalendar = (options) => {
     parseCalendar(semesterCalendar, html);
 
     return semesterCalendar;
+  } else {
+    // Create the directory if it does not exist
+    fs.mkdirSync(options.directory, { recursive: true });
   }
 
-  // Scrape the website
-  scrape(options)
-    .then((result) => {
-      console.log("Website successfully downloaded");
-      console.log("---------------------------");
-      console.log(result);
-      console.log("---------------------------");
-
-      // parseCalendar(html);
-    })
-    .catch((err) => {
-      console.error("Could not get result from website", err);
-    });
+  await axios.get(options.urls[0]).then((response) => {
+    console.log("Successfully downloaded website");
+    console.log("---------------------------");
+    console.log(response.data);
+    console.log("---------------------------");
+    fs.writeFileSync(
+      path.join(options.directory, "index.html"),
+      response.data,
+    );
+  }).catch((err) => {
+    console.log("Error downloading website", err);
+  })
 };
 
 export default getCalendar;

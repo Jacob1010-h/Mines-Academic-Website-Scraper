@@ -118,7 +118,7 @@ export const parseCalendar = (semesterCalendar, html) => {
           }
         }
       }
-      console.log(events);
+      // console.log(events);
       semesterCalendar[semester] = events;
     }
   });
