@@ -8,6 +8,7 @@ const options = {
   directory: "./result",
 };
 
+var builder = icalToolkit.createIcsFileBuilder();
 builder.calname = "Academic Calendar";
 builder.tzid = "America/Denver";
 builder.method = "REQUEST";
@@ -45,7 +46,6 @@ var addEvent = (startDate, endDate, event, modifiedEvent) => {
   builder.events.push(modifiedEvent);
   console.log("Event added: " + modifiedEvent.summary + " | " + "Discription: " + modifiedEvent.description + " |  Start: " + modifiedEvent.start.toLocaleString() + " | End: " + modifiedEvent.end.toLocaleString());
 }
-
 
 var makeCalendar = (academicCalendar) => {
   console.log(academicCalendar);
