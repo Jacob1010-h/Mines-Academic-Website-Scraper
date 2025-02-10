@@ -8,14 +8,6 @@ const options = {
   directory: "./result",
 };
 
-var academicCalendar = getCalendar(options);
-// Object.keys(academicCalendar).forEach((semester) => {
-//   console.log("-----" + semester + "-----");
-//   console.log(academicCalendar[semester]);
-// });
-
-var builder = icalToolkit.createIcsFileBuilder();
-
 builder.calname = "Academic Calendar";
 builder.tzid = "America/Denver";
 builder.method = "REQUEST";
