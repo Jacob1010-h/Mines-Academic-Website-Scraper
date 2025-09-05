@@ -1,15 +1,11 @@
+# for input and output operations
+import io
 import re
-from pprint import pprint
 
 import pdfplumber
 import requests
-from datetime import datetime
-import pytz
 # for tree traversal scraping in webpage
 from bs4 import BeautifulSoup
-
-# for input and output operations
-import io
 from icalendar import *
 
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'}
@@ -23,38 +19,39 @@ def get_cal_website():
 def get_all_pdf_links(html):
     soup = BeautifulSoup(html, 'html.parser')
     links = soup.find_all('a')
-    pdfs = []
+    pdf_links = []
     for link in links:
         if link.has_attr('href'):
             link = link['href']
             if link.endswith('.pdf'):
-                pdfs += [link]
+                pdf_links += [link]
 
-    return pdfs
+    return pdf_links
 
-def get_tables(pdf_links, desired_pdf):
-    response = requests.get(pdfs[int(desired_pdf) - 1], headers=headers)
+def get_tables(desired_pdf_year):
+    response = requests.get(pdfs[int(desired_pdf_year) - 1], headers=headers)
     pdf_to_bytes = io.BytesIO(response.content)
     with pdfplumber.open(pdf_to_bytes) as pdf_links:
         all_tables = []
 
-        for i, page in enumerate(pdf_links.pages):
+        for _, page in enumerate(pdf_links.pages):
 
-            tables = page.extract_tables()
+            _tables = page.extract_tables()
             # print (tables)
-            if tables:
-                for table in tables:
+            if _tables:
+                for table in _tables:
                     array_table = [list(row) for row in table]
-                    transposed_table = list(map(list, zip(*array_table)))
+                    transposed_table = list(map(list,
+                                                zip(*array_table)))
                     all_tables.append(transposed_table)
             else:
-                print("No Table found on page %d" % (i+1))
-            print("------End of Page %d------" % (i+1))
+                print("No Table found on page %d" % (_+1))
+            print("------End of Page %d------" % (_+1))
     return all_tables
 
 if __name__ == '__main__':
-    html = get_cal_website()
-    pdfs = get_all_pdf_links(html)
+    website_html = get_cal_website()
+    pdfs = get_all_pdf_links(website_html)
 
     year = input("What calendar year are you looking for? (format: YYYY)")
 
@@ -83,7 +80,7 @@ if __name__ == '__main__':
     print("\n\n\n")
     print("Retrieving pdf information...")
 
-    all_tables = get_tables(pdf_links=pdfs, desired_pdf=desired_pdf)
+    tables = get_tables(desired_pdf_year=desired_pdf)
 
     # pprint(all_tables)
 
@@ -91,15 +88,14 @@ if __name__ == '__main__':
 
     names = []
     last_index = -1
-    for i,col in enumerate(all_tables):
+    for i,col in enumerate(tables):
         for item in col:
-            if re.match(r"^Fall \d{4}$", item[0].capitalize())
-                    or re.match(r"^Fall \d{4}$", item[0].capitalize()):
+            if re.match(r"^Fall \d{4}$", item[0].capitalize()) or re.match(r"^Fall \d{4}$", item[0].capitalize()):
                 last_index = i
             if last_index is i:
                 names += item
-        print(col[0])
-        print("----")
+        # print(col[0])
+        # print("----")
 
     print(names)
 
