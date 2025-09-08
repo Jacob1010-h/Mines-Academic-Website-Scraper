@@ -148,6 +148,8 @@ if __name__ == '__main__':
 
     pprint.pprint(events)
 
+    #TODO: Create the events based on the dict that was just created
+
     # event = Event()
     # event.add('name', name)
     # event.add('dtstart', datetime(year, month, day, 0,0,0, 0, tzinfo=pytz.utc))
