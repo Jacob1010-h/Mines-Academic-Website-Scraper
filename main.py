@@ -7,8 +7,10 @@ import requests
 # for tree traversal scraping in webpage
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from icalendar import *
+import icalendar
+import datetime as dt
 import pprint
+import dateutil.tz
 
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'}
 
@@ -31,6 +33,7 @@ def get_all_pdf_links(html : bytes) -> list:
     return pdf_links
 
 def get_tables(desired_pdf_year : str ) -> list :
+    print (pdfs[int(desired_pdf_year) - 1])
     response = requests.get(pdfs[int(desired_pdf_year) - 1], headers=headers)
     pdf_to_bytes = io.BytesIO(response.content)
     with pdfplumber.open(pdf_to_bytes) as pdf_links:
@@ -51,24 +54,25 @@ def get_tables(desired_pdf_year : str ) -> list :
             print("------End of Page %d------" % (_+1))
     return all_tables
 
-def print_pdf_info(pdf_list : list):
+def print_pdf_info(year, pdf_list : list):
     # get all the names for each link
     pdf_names = []
-    for i in range(len(pdf_list) - 1, -1, -1):
-        if year not in pdf_list[i]:
-            pdf_list.pop(i)
+    
+    pdfs_correct_year = pdf_list.copy()
+    for pdf in pdf_list:
+        if year not in pdf:
+            pdfs_correct_year.remove(pdf)
             continue
-        split = pdf_list[i].split('/')
 
-        # get the end of the link
+        split = pdf.split('/')
         pdf_names += split[-1:]
 
     print("Here are the pdfs with the desired year...")
-    if not pdf_list:
+    if not pdfs_correct_year:
         raise Exception("No PDFs found for %s" % year)
 
-    for i, pdf in enumerate(pdf_list):
-        print("PDF %d/%d" % (i + 1, len(pdf_list)))
+    for i, pdf in enumerate(pdfs_correct_year):
+        print("PDF %d/%d" % (i + 1, len(pdfs_correct_year)))
         print("Name: " + pdf_names[i])
         print("Link: " + pdf)
         print("--------------")
@@ -127,8 +131,9 @@ def create_event_dict(tables : list) -> dict:
                 "date": date,
                 "session": session_header,
             }
-    
+
     return events
+
 
 if __name__ == '__main__':
     website_html = get_cal_website()
@@ -136,7 +141,7 @@ if __name__ == '__main__':
 
     year = input("What calendar year are you looking for? (format: YYYY)")
     
-    print_pdf_info(pdf_list=pdfs)
+    print_pdf_info(year, pdf_list=pdfs)
 
     desired_pdf = input("What pdf are you looking for?")
     print("\n\n\n")
@@ -148,9 +153,64 @@ if __name__ == '__main__':
 
     pprint.pprint(events)
 
-    #TODO: Create the events based on the dict that was just created
+    #TODO: Create a Event with the name, desc, and date (placeholder date for now)
+        
+    calendar = icalendar.Calendar()
+    calendar.add("X-WR-CALNAME", "Mines Academic Caleendar")
 
-    # event = Event()
-    # event.add('name', name)
-    # event.add('dtstart', datetime(year, month, day, 0,0,0, 0, tzinfo=pytz.utc))
-    # event.add('dtend', datetime(year, month, day,0,0,0,0,tzinfo=pytz.utc))
+    for season in events.values():
+        assert isinstance(season, dict)
+        event_dict = season.values()
+        event_dict = list(event_dict)
+        assert isinstance(event_dict, list)
+        
+        for event in event_dict:
+            assert isinstance(event, dict)
+            name = event["name"]
+            desc = event["session"]
+            date_parse = event["date"]
+
+            assert isinstance(name, str)
+            assert isinstance(desc, str)
+            assert isinstance(date_parse, str)
+            
+            # Month and day(s), Year (weekday(s))
+            date_parse = date_parse.split(",")
+            month_day_parse = date_parse[0]
+            year_weekday_parse = date_parse[1]
+
+            #Get the month in the first half of the string
+            month_day_parse = month_day_parse.split(" ")
+            month_start = month_day_parse[0]
+            month_end = month_day_parse[0]
+
+            # Handle multiple days like August 16-17
+            if "-" in month_day_parse[1]:
+                day_start = month_day_parse[1].split("-")[0]
+                day_end = month_day_parse[1].split("-")[1]
+            else:
+                day_start = month_day_parse[1]
+
+            year_start = 2025
+            month_start = 9
+            day_start = 12
+
+            year_end = 2025
+            month_end = 9
+            day_end = 12
+            
+            tz = dateutil.tz.gettz('America/Denver')
+            
+            e = icalendar.Event()
+            e.add('name', name)
+            e.add('dtstart', dt.datetime(year= year_start, month= month_start, day= day_start,tzinfo=tz))
+            e.add('dtend', dt.datetime(year = year_end, month = month_end, day = day_end,tzinfo=tz))
+            e.add('description', desc)
+
+            calendar.add_component(e)
+
+    # print(calendar.to_ical())
+
+
+
+
